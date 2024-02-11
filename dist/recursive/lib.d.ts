@@ -1,5 +1,5 @@
 import { DocumentWithLoc } from "../types.js";
-import { RecursiveParams } from "./textSplitterRecursive.js";
+import { RecursiveParams } from "../types.js";
 export declare let setDebug: (d: boolean) => boolean;
 export type LibRecursiveParams = Omit<RecursiveParams, "chunkOverlap"> & {
     chunkOverlap: number;

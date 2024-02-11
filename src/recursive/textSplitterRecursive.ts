@@ -1,39 +1,13 @@
 import { mdSeparators } from "../separators.js"
-import { DocumentWithLoc, TextSplitterParams } from "../types.js"
+import {
+  DocumentWithLoc,
+  RecursiveParams,
+  RecursiveParamsWithSeparators,
+  RecursiveParamsWithType,
+} from "../types.js"
 import { getLineCounter } from "../utils.js"
 import { splitOnSeparator, setDebug, LibRecursiveParams } from "./lib.js"
 import { splitSol } from "./sol.js"
-
-export type FileType = "sol" | "md"
-
-type AllParamOptions = Pick<
-  TextSplitterParams,
-  "chunkSize" | "chunkOverlap"
-> & {
-  type?: FileType
-  // by default, we don't count whitespace in the start/end of lines towards the chunk size
-  // (eg. source code indention)
-  countWhiteSpace?: boolean
-  separators?: RegExp[]
-  debug?: boolean
-}
-
-// input with custom separators
-export type RecursiveParamsWithSeparators = Omit<
-  AllParamOptions,
-  "type" | "separators"
-> & { separators: RegExp[] }
-
-// input with type. if type is defined, then don't need to set separators array
-export type RecursiveParamsWithType = Omit<
-  AllParamOptions,
-  "type" | "separators"
-> & {
-  type: FileType
-}
-export type RecursiveParams =
-  | RecursiveParamsWithSeparators
-  | RecursiveParamsWithType
 
 export let splitText = (
   text: string,

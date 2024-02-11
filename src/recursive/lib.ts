@@ -1,7 +1,7 @@
 import chalk from "chalk"
 import { DocumentWithLoc } from "../types.js"
 import { willFillChunkSize, getLengthNoWhitespace } from "../utils.js"
-import { RecursiveParams } from "./textSplitterRecursive.js"
+import { RecursiveParams } from "../types.js"
 
 let debug = true
 export let setDebug = (d: boolean) => (debug = d)

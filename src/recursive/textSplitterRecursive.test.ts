@@ -1,10 +1,9 @@
 import { describe, expect, test } from "vitest"
-import { Document, DocumentWithLoc } from "../types.js"
+import { Document, DocumentWithLoc, RecursiveParamsWithType } from "../types.js"
 import fs from "fs"
 import { getLengthNoWhitespace } from "../utils.js"
 import { recursive } from "../index.js"
 import { preSplitSol, splitOnSolComments } from "./sol.js"
-import { RecursiveParamsWithType } from "./textSplitterRecursive.js"
 
 describe("sol", () => {
   test("splits full contract", () => {
