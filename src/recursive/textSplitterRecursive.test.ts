@@ -1,5 +1,5 @@
-import { vi, describe, expect, test } from "vitest"
-import { Document } from "../types.js"
+import { describe, expect, test } from "vitest"
+import { Document, DocumentWithLoc } from "../types.js"
 import fs from "fs"
 import { getLengthNoWhitespace } from "../utils.js"
 import { recursive } from "../index.js"
@@ -13,8 +13,9 @@ describe("sol", () => {
       chunkOverlap: 0,
       type: "sol",
     }
-
-    let text = fs.readFileSync("./src/test/samples/sample.sol").toString()
+    let text = fs
+      .readFileSync("./src/recursive/test/samples/sample.sol")
+      .toString()
 
     const docs = recursive.splitText(text, params)
 
@@ -45,7 +46,7 @@ describe("sol", () => {
       type: "sol",
     }
     let text = fs
-      .readFileSync("./src/test/samples/sample-long-if.sol")
+      .readFileSync("./src/recursive/test/samples/sample-long-if.sol")
       .toString()
 
     const docs = recursive.splitText(text, params)
@@ -74,14 +75,18 @@ describe("sol", () => {
   })
 
   test("pre split sol", async () => {
-    let text = fs.readFileSync("./src/test/samples/sample.sol").toString()
+    let text = fs
+      .readFileSync("./src/recursive/test/samples/sample.sol")
+      .toString()
     let split = preSplitSol(text, 550, 0)
     let joined = split.join("")
     expect(joined).toBe(text)
   })
 
   test("split on comments", async () => {
-    let text = fs.readFileSync("./src/test/samples/sample.sol").toString()
+    let text = fs
+      .readFileSync("./src/recursive/test/samples/sample.sol")
+      .toString()
     let split = splitOnSolComments(text)
     let joined = split.map((s) => s.join("")).join("")
     expect(joined).toBe(text)
@@ -96,7 +101,9 @@ describe("md", () => {
       type: "md",
     }
 
-    let text = fs.readFileSync("./src/test/samples/sample.md").toString()
+    let text = fs
+      .readFileSync("./src/recursive/test/samples/sample.md")
+      .toString()
     const docs = recursive.splitText(text, params)
     printResultToFile("sample.md", docs)
 
@@ -119,7 +126,9 @@ describe("md", () => {
       type: "md",
     }
 
-    let text = fs.readFileSync("./src/test/samples/readme.md").toString()
+    let text = fs
+      .readFileSync("./src/recursive/test/samples/readme.md")
+      .toString()
     const docs = recursive.splitText(text, params)
 
     for (let i = 1; i < docs.length; i++) {
@@ -141,14 +150,9 @@ describe("md", () => {
       type: "md",
     }
 
-    let text = fs.readFileSync("./src/test/samples/ethena.md").toString()
-    let doc: Document = {
-      pageContent: text,
-      metadata: {
-        source: "url.com",
-        loc: undefined,
-      },
-    }
+    let text = fs
+      .readFileSync("./src/recursive/test/samples/ethena.md")
+      .toString()
 
     const docs = recursive.splitText(text, params)
     printResultToFile("readme.md", docs)
@@ -163,6 +167,42 @@ describe("md", () => {
     }
 
     expect(docs.at(-1)?.metadata.loc.lines.to).toBe(text.split("\n").length)
+  })
+
+  test("short lines", async () => {
+    // langchain for this one had a bug where result had too small chunks
+    const params: RecursiveParamsWithType = {
+      chunkSize: 500,
+      type: "md",
+    }
+
+    let text = fs
+      .readFileSync("./src/recursive/test/samples/short-lines.md")
+      .toString()
+
+    const docs = recursive.splitText(text, params)
+    printResultToFile("short-lines.md", docs)
+
+    for (let i = 1; i < docs.length; i++) {
+      let prev = docs[i - 1]
+      let curr = docs[i]
+
+      expect(prev.metadata.loc.lines.from).toBeLessThanOrEqual(
+        curr.metadata.loc.lines.from
+      )
+    }
+
+    // we expect all of the docs to have sufficient length, except very small remainder chunks
+    let trimmed = docs.reduce((acc, curr) => {
+      if (curr.pageContent.trim().length > 10) {
+        acc.push(curr)
+      }
+      return acc
+    }, [] as DocumentWithLoc[])
+
+    trimmed.forEach((doc) => {
+      expect(doc.pageContent.length).toBeGreaterThanOrEqual(200)
+    })
   })
 })
 
@@ -197,14 +237,12 @@ const printResultToFile = (
   for (const doc of docs) {
     let metadata = doc.metadata
     let content = doc.pageContent
-    file += `${JSON.stringify(metadata, null, 2)}\n${content}\n`
+    file += `${content}\n${JSON.stringify(metadata, null, 2)}\n`
   }
 
   fs.mkdirSync("./src/recursive/test/results", { recursive: true })
   fs.writeFileSync(
-    `./src/text_splitters/tests/results/${
-      fileName.split(".")[1]
-    }-${version}.txt`,
+    `./src/recursive/test/results/${fileName.split(".")[0]}-${version}.txt`,
     file
   )
 }

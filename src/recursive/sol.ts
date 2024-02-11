@@ -2,13 +2,17 @@
 
 import { solSeparators } from "../separators.js"
 import { DocumentWithLoc } from "../types.js"
-import { getLengthNoWhitespace, willFillChunkSize } from "../utils.js"
-import { splitOnSeparator } from "./lib.js"
-import { RecursiveParams } from "./textSplitterRecursive.js"
+import {
+  getLengthNoWhitespace,
+  getLineCounter,
+  willFillChunkSize,
+} from "../utils.js"
+import { LibRecursiveParams, splitOnSeparator } from "./lib.js"
 
-export let splitSol = (text: string, params: RecursiveParams) => {
+export let splitSol = (text: string, params: LibRecursiveParams) => {
   let { chunkSize, chunkOverlap } = params
   let builder: DocumentWithLoc[] = []
+  let lineCounter = getLineCounter()
 
   let preSplit = preSplitSol(text, chunkSize, chunkOverlap)
 
@@ -23,6 +27,7 @@ export let splitSol = (text: string, params: RecursiveParams) => {
       separators[0],
       separators,
       chunkBuilder,
+      lineCounter,
       params
     )
     // let withOverlap = this.addOverlapFromPreviousChunks(docs);

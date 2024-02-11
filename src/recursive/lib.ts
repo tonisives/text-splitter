@@ -1,18 +1,27 @@
+import chalk from "chalk"
 import { DocumentWithLoc } from "../types.js"
-import { willFillChunkSize, addToBuilder, getLengthNoWhitespace } from "../utils.js"
+import { willFillChunkSize, getLengthNoWhitespace } from "../utils.js"
 import { RecursiveParams } from "./textSplitterRecursive.js"
 
 let debug = true
-export let setDebug = (d: boolean) =>  debug = d
+export let setDebug = (d: boolean) => (debug = d)
+
+export type LibRecursiveParams = Omit<RecursiveParams, "chunkOverlap"> & {
+  chunkOverlap: number
+}
+export type LineCounter = {
+  get: () => number
+  set: (c: number) => void
+}
 
 export let splitOnSeparator = (
   text: string,
   separator: RegExp,
   separators: RegExp[],
   builder: DocumentWithLoc[],
-  params: RecursiveParams
+  lineCounter: LineCounter,
+  params: LibRecursiveParams
 ): DocumentWithLoc[] => {
-  let lineCounter = 1
   let { chunkSize, chunkOverlap } = params
   let currentSeparatorIndex = separators.indexOf(separator)
   let separatorChunks: string[] = []
@@ -36,16 +45,24 @@ export let splitOnSeparator = (
           separators[currentSeparatorIndex + 1],
           separators,
           builder,
+          lineCounter,
           params
         )
       } else {
         // 0+ chunk splitting start with the clean separator array
-        splitOnSeparator(chunk, separators[0], separators, builder, params)
+        splitOnSeparator(
+          chunk,
+          separators[0],
+          separators,
+          builder,
+          lineCounter,
+          params
+        )
       }
     } else {
       if (debug) console.log(`separator: ${separator}`)
       // add the doc if fits to chunk size
-      lineCounter = addToBuilder(builder, chunk, debug, lineCounter)
+      addToBuilder(builder, chunk, debug, lineCounter)
     }
   }
 
@@ -56,10 +73,11 @@ export let splitOnSeparator = (
 const splitAndMergeSmallChunks = (
   text: string,
   separator: RegExp,
-  params: RecursiveParams
+  params: LibRecursiveParams
 ) => {
   let { chunkSize, chunkOverlap } = params
-  let split = text.split(separator)
+  // /(?<=\n)(?=(s+)### )/g retains empty strings
+  let split = text.split(separator).filter((r) => r.length > 0)
   let builder = [] as string[]
   let results = [] as string[]
 
@@ -82,6 +100,32 @@ const splitAndMergeSmallChunks = (
   }
 
   return results
+}
+
+const addToBuilder = (
+  builder: DocumentWithLoc[],
+  pageContent: string,
+  log: boolean,
+  lineCounter: LineCounter
+) => {
+  if (log) console.log(`adding to builder:\n${chalk.blue(pageContent)}`)
+
+  let chunkLineCount = pageContent.split("\n").length - 1
+
+  builder.push({
+    pageContent: pageContent,
+    metadata: {
+      source: "",
+      loc: {
+        lines: {
+          from: lineCounter.get(),
+          to: lineCounter.get() + chunkLineCount,
+        },
+      },
+    },
+  })
+
+  lineCounter.set(lineCounter.get() + chunkLineCount)
 }
 
 let addOverlapFromPreviousChunks = (

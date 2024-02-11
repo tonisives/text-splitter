@@ -8,31 +8,36 @@ include the whole @langchain module.
 
 It also tries to use more functional style of programming, so it should be easier to understand and maintain.
 
+## Stack
+```
+es module
+vitest
+chalk for logging
+```
+
 ## Installation
 
 `yarn add 'text-splitter@tonisives/text-splitter'``
 
+
 ## sample code
 
 ```typescript
+let text = fs.readFileSync("./src/test/samples/sample.md").toString()
 const params: RecursiveParamsWithType = {
   chunkSize: 550,
   chunkOverlap: 0,
-  type: "md",
+  type: "md", // or separators: ["\n", "\n\n", "\n\n\n"]
 }
 
-let text = fs.readFileSync("./src/test/samples/sample.md").toString()
-const docs = recursive.splitText(text, params)
+const docs:Document[] = recursive.splitText(text, params)
 printResultToFile("sample.md", docs)
 
-for (let i = 1; i < docs.length; i++) {
-  let prev = docs[i - 1]
-  let curr = docs[i]
-
-  expect(prev.metadata.loc.lines.from).toBeLessThanOrEqual(
-    curr.metadata.loc.lines.from
-  )
-}
-
 expect(docs.at(-1)?.metadata.loc.lines.to).toBe(text.split("\n").length)
+
 ```
+
+
+## Performance
+
+TODO: add comparison between langchain RecursiveTextSplitter. This one could be faster, because it doesn't compare strings for line count. But it's not tested yet.

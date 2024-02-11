@@ -4,3 +4,4 @@ node_modules
 src/text_splitters/tests/results
 dist
 yarn.lock
+src/recursive/test/results
