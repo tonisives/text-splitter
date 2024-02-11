@@ -14,6 +14,14 @@ export type LineCounter = {
   set: (c: number) => void
 }
 
+
+/**
+ * It splits the text with [separator], and then continues splitting it until it fills the chunk size.
+ * 
+ * It then recursively splits all of the chunks.
+ * 
+ * note: since splitting like this can result in small chunks in the end, then addBuilder will merge the last chunk with the previous one if it fits the chunk size.
+ */
 export let splitOnSeparator = (
   text: string,
   separator: RegExp,
@@ -38,31 +46,26 @@ export let splitOnSeparator = (
     ) // splitAndMerge uses [] as builder
 
     if (chunkWillFillChunkSize) {
+      let separator
       if (i === 0) {
         // continue splitting the first chunk
-        splitOnSeparator(
-          chunk,
-          separators[currentSeparatorIndex + 1],
-          separators,
-          builder,
-          lineCounter,
-          params
-        )
+        separator = separators[currentSeparatorIndex + 1]
       } else {
         // 0+ chunk splitting start with the clean separator array
-        splitOnSeparator(
-          chunk,
-          separators[0],
-          separators,
-          builder,
-          lineCounter,
-          params
-        )
+        separator = separators[0]
       }
+      splitOnSeparator(
+        chunk,
+        separator,
+        separators,
+        builder,
+        lineCounter,
+        params
+      )
     } else {
       if (debug) console.log(`separator: ${separator}`)
       // add the doc if fits to chunk size
-      addToBuilder(builder, chunk, debug, lineCounter)
+      addToBuilder(builder, chunk, debug, lineCounter, params)
     }
   }
 
@@ -77,7 +80,7 @@ const splitAndMergeSmallChunks = (
 ) => {
   let { chunkSize, chunkOverlap } = params
   // /(?<=\n)(?=(s+)### )/g retains empty strings
-  let split = text.split(separator).filter((r) => r.length > 0)
+  let split = text.split(separator).filter((it) => it.length > 0)
   let builder = [] as string[]
   let results = [] as string[]
 
@@ -106,26 +109,53 @@ const addToBuilder = (
   builder: DocumentWithLoc[],
   pageContent: string,
   log: boolean,
-  lineCounter: LineCounter
+  lineCounter: LineCounter,
+  params: LibRecursiveParams
 ) => {
   if (log) console.log(`adding to builder:\n${chalk.blue(pageContent)}`)
-
   let chunkLineCount = pageContent.split("\n").length - 1
 
-  builder.push({
-    pageContent: pageContent,
-    metadata: {
-      source: "",
-      loc: {
-        lines: {
-          from: lineCounter.get(),
-          to: lineCounter.get() + chunkLineCount,
+  // the [splitOnSeparator] logic breaks text so it fits the chunk size. This means that the last chunk
+  // can be smaller than full chunk size. Therefore, we merge with the previous chunk if possible
+  if (
+    builder.length > 0 &&
+    !willFillChunkSize(
+      builder[builder.length - 1].pageContent + pageContent,
+      builder,
+      params.chunkSize,
+      params.chunkOverlap
+    )
+  ) {
+    let prev = builder[builder.length - 1]
+    builder[builder.length - 1] = {
+      pageContent: prev.pageContent + pageContent,
+      metadata: {
+        ...prev.metadata,
+        loc: {
+          lines: {
+            from: prev.metadata.loc.lines.from,
+            to: prev.metadata.loc.lines.to + chunkLineCount,
+          },
         },
       },
-    },
-  })
+    }
 
-  lineCounter.set(lineCounter.get() + chunkLineCount)
+    lineCounter.set(lineCounter.get() + chunkLineCount)
+  } else {
+    builder.push({
+      pageContent: pageContent,
+      metadata: {
+        loc: {
+          lines: {
+            from: lineCounter.get(),
+            to: lineCounter.get() + chunkLineCount,
+          },
+        },
+      },
+    })
+
+    lineCounter.set(lineCounter.get() + chunkLineCount)
+  }
 }
 
 let addOverlapFromPreviousChunks = (

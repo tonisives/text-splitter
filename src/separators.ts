@@ -1,6 +1,8 @@
 const baseSeparators = [
   // split on \n and keep the \n separator
   /(?<=\n)/,
+  /(?<=\.\s)/,
+  /(?<=,\s)/,
   /(?<=\s)/,
 ]
 

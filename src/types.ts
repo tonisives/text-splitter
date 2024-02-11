@@ -14,7 +14,6 @@ export type Document = {
 }
 
 export type Metadata = Record<string, any> & {
-  source: string
 }
 
 export type DocumentWithLoc = Document & {

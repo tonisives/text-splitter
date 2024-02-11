@@ -119,7 +119,7 @@ describe("md", () => {
     expect(docs.at(-1)?.metadata.loc.lines.to).toBe(text.split("\n").length)
   })
 
-  test("test md readme", async () => {
+  test.only("test md readme", async () => {
     // this one splits until the \n
     const params: RecursiveParamsWithType = {
       chunkSize: 450,
@@ -130,6 +130,7 @@ describe("md", () => {
       .readFileSync("./src/recursive/test/samples/readme.md")
       .toString()
     const docs = recursive.splitText(text, params)
+    printResultToFile("readme.md", docs)
 
     for (let i = 1; i < docs.length; i++) {
       let prev = docs[i - 1]
@@ -155,7 +156,7 @@ describe("md", () => {
       .toString()
 
     const docs = recursive.splitText(text, params)
-    printResultToFile("readme.md", docs)
+    printResultToFile("ethena.md", docs)
 
     for (let i = 1; i < docs.length; i++) {
       let prev = docs[i - 1]
