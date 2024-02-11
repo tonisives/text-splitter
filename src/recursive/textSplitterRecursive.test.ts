@@ -118,7 +118,7 @@ describe("md", () => {
     expect(docs.at(-1)?.metadata.loc.lines.to).toBe(text.split("\n").length)
   })
 
-  test.only("test md readme", async () => {
+  test("test md readme", async () => {
     // this one splits until the \n
     const params: RecursiveParamsWithType = {
       chunkSize: 450,
