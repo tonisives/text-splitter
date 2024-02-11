@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "test": ""
+    "test": "yarn vitest run"
   },
   "devDependencies": {
     "@types/node": "^20.11.16",
