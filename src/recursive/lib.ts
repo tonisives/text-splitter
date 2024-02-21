@@ -14,12 +14,11 @@ export type LineCounter = {
   set: (c: number) => void
 }
 
-
 /**
  * It splits the text with [separator], and then continues splitting it until it fills the chunk size.
- * 
+ *
  * It then recursively splits all of the chunks.
- * 
+ *
  * note: since splitting like this can result in small chunks in the end, then addBuilder will merge the last chunk with the previous one if it fits the chunk size.
  */
 export let splitOnSeparator = (
@@ -46,17 +45,27 @@ export let splitOnSeparator = (
     ) // splitAndMerge uses [] as builder
 
     if (chunkWillFillChunkSize) {
-      let separator
+      if (separator === separators[separators.length - 1]) {
+        // this is a long text without spaces. just split it by chunk size
+        let chunked = splitByChunkSize(text, chunkSize, chunkOverlap)
+        for (let j = 0; j < chunked.length; j++) {
+          addToBuilder(builder, chunked[j], debug, lineCounter, params)
+        }
+
+        break
+      }
+
+      let nextSeparator
       if (i === 0) {
         // continue splitting the first chunk
-        separator = separators[currentSeparatorIndex + 1]
+        nextSeparator = separators[currentSeparatorIndex + 1]
       } else {
         // 0+ chunk splitting start with the clean separator array
-        separator = separators[0]
+        nextSeparator = separators[0]
       }
       splitOnSeparator(
         chunk,
-        separator,
+        nextSeparator,
         separators,
         builder,
         lineCounter,
@@ -70,6 +79,23 @@ export let splitOnSeparator = (
   }
 
   return builder
+}
+
+let splitByChunkSize = (
+  text: string,
+  chunkSize: number,
+  chunkOverlap: number
+) => {
+  let chunks = [] as string[]
+  for (let i = 0; i < text.length; i += chunkSize + chunkOverlap) {
+    let chunk = text.slice(
+      i - chunkOverlap / 2,
+      i + chunkSize + chunkOverlap / 2
+    )
+    chunks.push(chunk)
+  }
+
+  return chunks
 }
 
 // if split chunk is smaller than chunk size, merge it with the next one

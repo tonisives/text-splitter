@@ -18,16 +18,24 @@ export let splitOnSeparator = (text, separator, separators, builder, lineCounter
         let chunk = separatorChunks[i];
         let chunkWillFillChunkSize = willFillChunkSize(chunk, [], chunkSize, chunkOverlap); // splitAndMerge uses [] as builder
         if (chunkWillFillChunkSize) {
-            let separator;
+            if (separator === separators[separators.length - 1]) {
+                // this is a long text without spaces. just split it by chunk size
+                let chunked = splitByChunkSize(text, chunkSize, chunkOverlap);
+                for (let j = 0; j < chunked.length; j++) {
+                    addToBuilder(builder, chunked[j], debug, lineCounter, params);
+                }
+                break;
+            }
+            let nextSeparator;
             if (i === 0) {
                 // continue splitting the first chunk
-                separator = separators[currentSeparatorIndex + 1];
+                nextSeparator = separators[currentSeparatorIndex + 1];
             }
             else {
                 // 0+ chunk splitting start with the clean separator array
-                separator = separators[0];
+                nextSeparator = separators[0];
             }
-            splitOnSeparator(chunk, separator, separators, builder, lineCounter, params);
+            splitOnSeparator(chunk, nextSeparator, separators, builder, lineCounter, params);
         }
         else {
             if (debug)
@@ -37,6 +45,14 @@ export let splitOnSeparator = (text, separator, separators, builder, lineCounter
         }
     }
     return builder;
+};
+let splitByChunkSize = (text, chunkSize, chunkOverlap) => {
+    let chunks = [];
+    for (let i = 0; i < text.length; i += chunkSize + chunkOverlap) {
+        let chunk = text.slice(i - chunkOverlap / 2, i + chunkSize + chunkOverlap / 2);
+        chunks.push(chunk);
+    }
+    return chunks;
 };
 // if split chunk is smaller than chunk size, merge it with the next one
 const splitAndMergeSmallChunks = (text, separator, params) => {

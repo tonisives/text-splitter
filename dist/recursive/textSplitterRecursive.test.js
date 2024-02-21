@@ -149,6 +149,23 @@ describe("md", () => {
             expect(doc.pageContent.length).toBeGreaterThanOrEqual(200);
         });
     });
+    test("max call stack", () => {
+        const params = {
+            chunkSize: 500,
+            type: "md",
+        };
+        let text = fs
+            .readFileSync("./src/recursive/test/samples/max-call-stack.md")
+            .toString();
+        const docs = recursive.splitText(text, params);
+        printResultToFile("max-call-stack.md", docs);
+        for (let i = 1; i < docs.length; i++) {
+            let prev = docs[i - 1];
+            let curr = docs[i];
+            expect(prev.metadata.loc.lines.from).toBeLessThanOrEqual(curr.metadata.loc.lines.from);
+        }
+        expect(docs.at(-1)?.metadata.loc.lines.to).toBe(text.split("\n").length);
+    });
 });
 const verifyMiddleChunksWithCorrectLength = (docs, chunkSize, deviation = 5) => {
     // deviation: on character split needs to be precise(5)
